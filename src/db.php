@@ -1,8 +1,8 @@
 <?php
-$host = "db";          // اسم خدمة MySQL في docker-compose
-$user = "news_user";  // من docker-compose.yml
-$pass = "news_pass";  // من docker-compose.yml
-$db   = "news_db";    // من docker-compose.yml
+$host = "db";      // اسم service
+$user = "news_user";
+$pass = "news_pass";
+$db = "news_db";
 
 $conn = new mysqli($host, $user, $pass, $db);
 
