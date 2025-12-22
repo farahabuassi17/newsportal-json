@@ -1,4 +1,3 @@
-
 services:
   web:
     build: .
@@ -7,15 +6,16 @@ services:
     depends_on:
       - db
 
-db:
-  image: mysql:8.0
-  environment:
-    MYSQL_ROOT_PASSWORD: root
-    MYSQL_DATABASE: news_db
-    MYSQL_USER: news_user
-    MYSQL_PASSWORD: news_pass
-  volumes:
-    - db_data:/var/lib/mysql
-    - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: news_db
+      MYSQL_USER: news_user
+      MYSQL_PASSWORD: news_pass
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
 volumes:
   db_data:
