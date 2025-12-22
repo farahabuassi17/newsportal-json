@@ -86,3 +86,15 @@ This project uses Docker Compose to run multiple services:
 To start all services:
 docker compose up --build
 
+### Makefile Commands
+
+To simplify working with Docker, a Makefile is provided:
+
+- `make build` – Build Docker images
+- `make run` – Run the application
+- `make run-build` – Build and run the application
+- `make stop` – Stop running containers
+- `make clean` – Stop containers and remove volumes
+- `make logs` – View container logs
+
+

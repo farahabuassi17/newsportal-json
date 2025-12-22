@@ -34,3 +34,11 @@ A simple health endpoint (health.php) was created to return HTTP 200.
 Docker periodically checks this endpoint and marks the container as healthy or unhealthy.
 This improves reliability and follows best practices for containerized applications.
 
+### Makefile
+
+I added a Makefile to simplify Docker commands.
+Common tasks such as building, running, stopping, and cleaning the project
+can now be executed using short and clear commands.
+This makes the project easier to use for any developer.
+
+
