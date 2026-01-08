@@ -114,6 +114,11 @@ View logs:make logs
 - Faster setup and deployment
 - Ideal for Docker-based demonstrations
 
+### Deployment
+The application was deployed on Back4App using GitHub web-based deployment.
+The repository was connected directly, allowing Back4App to automatically build and deploy the project.
+
+
 ### 📌 Notes
 
 - Uploaded images are stored in src/uploads/
