@@ -1,31 +1,62 @@
 <?php
 session_start();
-include("db.php");
+require_once __DIR__ . "/json_db.php";
 
+// التأكد من تسجيل الدخول
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
 
-$id = $_GET['id'] ?? 0;
+$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+// قراءة البيانات
+$data = readData();
+$categories = $data['categories'] ?? [];
 
 // جلب بيانات الفئة
-$res = $conn->query("SELECT * FROM categories WHERE id=$id");
-if ($res->num_rows == 0) {
+$category = null;
+foreach ($categories as $cat) {
+    if ($cat['id'] === $id) {
+        $category = $cat;
+        break;
+    }
+}
+
+if (!$category) {
     header("Location: categories.php");
     exit;
 }
-$category = $res->fetch_assoc();
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $name = $_POST['name'];
-    $sql = "UPDATE categories SET name='$name' WHERE id=$id";
-    if ($conn->query($sql)) {
-        $success = "Category updated successfully!";
-        // تحديث بيانات الفئة
-        $category['name'] = $name;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name']);
+
+    if ($name === "") {
+        $error = "Category name cannot be empty!";
     } else {
-        $error = "Error: " . $conn->error;
+        // التحقق من عدم تكرار الاسم مع تصنيف آخر
+        foreach ($categories as $cat) {
+            if ($cat['id'] !== $id && strtolower($cat['name']) === strtolower($name)) {
+                $error = "This category name already exists!";
+                break;
+            }
+        }
+
+        if (!isset($error)) {
+            // تحديث اسم الفئة
+            foreach ($categories as &$cat) {
+                if ($cat['id'] === $id) {
+                    $cat['name'] = $name;
+                    $category['name'] = $name; // لتحديث القيمة المعروضة
+                    break;
+                }
+            }
+
+            $data['categories'] = $categories;
+            saveData($data);
+
+            $success = "Category updated successfully!";
+        }
     }
 }
 ?>
@@ -100,15 +131,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </ul>
         </div>
     </nav>
+
     <div class="container mt-4">
         <h2>Edit Category</h2>
         <div class="card p-4 mt-3">
-            <?php if (!empty($success)) {
-                echo "<div class='alert alert-success'>$success</div>";
-            } ?>
-            <?php if (!empty($error)) {
-                echo "<div class='alert alert-danger'>$error</div>";
-            } ?>
+
+            <?php if (!empty($success)) { ?>
+                <div class="alert alert-success"><?= $success ?></div>
+            <?php } ?>
+
+            <?php if (!empty($error)) { ?>
+                <div class="alert alert-danger"><?= $error ?></div>
+            <?php } ?>
+
             <form method="post">
                 <div class="mb-3">
                     <label class="form-label">Category Name</label>

@@ -1,6 +1,6 @@
 <?php
 session_start();
-include("db.php");
+require_once __DIR__ . "/json_db.php";
 
 // التحقق من تسجيل الدخول
 if (!isset($_SESSION['user_id'])) {
@@ -8,17 +8,39 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-if (isset($_GET['id'])) {
-    $id = intval($_GET['id']);
+if (!isset($_GET['id'])) {
+    header("Location: deleted_news.php");
+    exit;
+}
 
-    $stmt = $conn->prepare("UPDATE news SET deleted = 0 WHERE id = ?");
-    $stmt->bind_param("i", $id);
+$id = (int)$_GET['id'];
 
-    if ($stmt->execute()) {
-        header("Location: deleted_new.php?msg=restored");
-        exit;
-    } else {
-        echo "Error restoring news.";
+// قراءة البيانات
+$data = readData();
+$news = $data['news'] ?? [];
+
+$restored = false;
+
+// إرجاع الخبر (deleted = false)
+foreach ($news as &$item) {
+    if ($item['id'] === $id && $item['user_id'] === $_SESSION['user_id']) {
+        $item['deleted'] = false;
+        $restored = true;
+        break;
     }
 }
+
+// إذا لم يتم العثور على الخبر
+if (!$restored) {
+    header("Location: deleted_news.php");
+    exit;
+}
+
+// حفظ التعديلات
+$data['news'] = $news;
+saveData($data);
+
+// الرجوع لصفحة الأخبار المحذوفة
+header("Location: deleted_news.php?msg=restored");
+exit;
 ?>

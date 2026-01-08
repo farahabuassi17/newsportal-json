@@ -1,104 +1,131 @@
-# 📰NewsPortal-Docker
+# 📰 News Management System (PHP + JSON + Docker)
 
-A simple PHP & MySQL news management system containerized with Docker.  
-The project allows users to register, log in, manage news articles, and organize them into categories.  
-It is designed to be easy to run, reproducible, and suitable for academic and learning purposes.
+A simple **News Management System** built with **PHP** and **Bootstrap**, containerized using **Docker**, and using **JSON file storage** instead of a traditional database.
+
+This project allows users to register, log in, manage categories, add/edit/delete news, and restore deleted news.  
+It is designed for **learning, academic purposes, and easy deployment**.
 
 ---
 
-## Tech Stack
+## ✨ Features
 
-- PHP 8.2 (Apache)
-- MySQL 8.0
+- User Authentication (Register / Login / Logout)
+- Category Management (Add / Edit / Delete)
+- News Management:
+  - Add news with image upload
+  - Edit news
+  - Soft delete news
+  - Restore deleted news
+- View news per logged-in user
+- JSON-based data storage (No MySQL)
+- Dockerized environment
+- Simple health check endpoint
+
+---
+
+## 🛠️ Technologies Used
+
+- PHP 8.2
+- Bootstrap 5
+- JSON (as a replacement for MySQL)
 - Docker & Docker Compose
-- HTML / CSS (basic UI)
-- Git & GitHub
+- Apache
 
 ---
-How to Build and Run Using Docker
 
-### Prerequisites
-Make sure the following tools are installed on your machine:
-- Docker
-- Docker Compose
+## 📁 Project Structure
 
-### Build and Run the Project
-From the project root directory, run the following command:
-bash
+├── src/
+│ ├── add_category.php
+│ ├── add_news.php
+│ ├── categories.php
+│ ├── dashboard.php
+│ ├── delete_category.php
+│ ├── delete_news.php
+│ ├── deleted_news.php
+│ ├── edit_category.php
+│ ├── edit_news.php
+│ ├── index.php
+│ ├── json_db.php
+│ ├── logout.php
+│ ├── new.php
+│ ├── registre.php
+│ ├── restore.php
+│ ├── health.php
+│ └── uploads/
+├── storage/
+│ └── data.json
+├── Dockerfile
+├── docker-compose.yml
+├── Makefile
+├── .gitignore
+├── .dockerignore
+└── README.md
 
-docker compose up --build 
+---
 
-### This command will:
+## 📦 Data Storage (JSON)
 
-Build the PHP Docker image
+Instead of using MySQL, the application stores all data in a single JSON file:
 
-Start the MySQL database container
+### Example structure:
 
-Initialize the database schema automatically
+```json
+{
+  "users": [],
+  "categories": [],
+  "news": []
+}
+```
 
-Run the web application
+This approach simplifies deployment and removes the need for a database server.
 
-Access the Application
-After the containers are running, open your browser and visit:
-http://localhost:8080
+### 🐳 Docker Setup
 
-### Configuration Notes
-Application Port
+Build the project :make build
+Run the application:make run
+Build and run:make run-build
+Stop containers:make stop
+View logs:make logs
 
-The web application runs on port 8080
+### 🌐 Access the Application
 
-Database Configuration (defined in docker-compose.yml)
+### 🔐 Authentication Flow
 
-Database name: news_db
+1. Register a new account
 
-Database user: news_user
+2. Log in using your credentials
 
-Database password: news_pass
+3. Manage categories and news
 
-MySQL root password: root
+4. Log out safely using PHP sessions
 
-No additional environment configuration is required.
+### Soft Delete & Restore
 
-## How to Test the Application
-1. Open the application in the browser:http://localhost:8080
+- Deleted news is not permanently removed
 
-2. Register a new user using the registration page.
+- It is marked as deleted = true
 
-3. Log in with the created account.
+- Deleted items can be restored from the Deleted News page
 
-4. Access the dashboard.
+### Why JSON Instead of MySQL?
 
-5. Add categories and news articles.
+- No database server required
+- Easy to understand and debug
+- Suitable for small projects and academic use
+- Faster setup and deployment
+- Ideal for Docker-based demonstrations
 
-6. Refresh the page to confirm data persistence.
+### 📌 Notes
 
-If all pages load correctly and data is stored in the database, the application is working as expected
+- Uploaded images are stored in src/uploads/
 
-## Attribution
+- data.json is included and contains sample data
 
-This project was developed for educational purposes as part of an Operating Systems Lab assignment.
-No external open-source project was directly reused.
+- Docker health check ensures the application is running properly
 
-## Docker Compose
+### 👩‍💻 Author
 
-This project uses Docker Compose to run multiple services:
-- Web service (PHP + Apache)
-- Database service (MySQL)
-
-To start all services:
-docker compose up --build
-
-### Makefile Commands
-
-To simplify working with Docker, a Makefile is provided:
-
-- `make build` – Build Docker images
-- `make run` – Run the application
-- `make run-build` – Build and run the application
-- `make stop` – Stop running containers
-- `make clean` – Stop containers and remove volumes
-- `make logs` – View container logs
-
-> This project follows a professional Git workflow using feature branches and pull requests.
-
-
+Farah Mahmoud Abuassi
+Software Development Student
+Islamic University of Gaza – Faculty of Information Technology

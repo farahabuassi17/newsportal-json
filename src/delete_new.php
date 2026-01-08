@@ -1,17 +1,45 @@
 <?php
 session_start();
-include("db.php");
-if (!isset($_SESSION['user_id'])) header(header: "Location: index.php");
+require_once __DIR__ . "/json_db.php";
 
-if (isset($_GET['id'])) {
-  $id = intval($_GET['id']);
-  $stmt = $conn->prepare("UPDATE news SET deleted = 1 WHERE id = ?");
-  $stmt->bind_param("i", $id);
-  if ($stmt->execute()) {
+// التحقق من تسجيل الدخول
+if (!isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit;
+}
+
+if (!isset($_GET['id'])) {
     header("Location: new.php");
     exit;
-  } else {
-    echo "Error: " . $conn->error;
-  }
 }
-?>
+
+$id = (int)$_GET['id'];
+
+// قراءة البيانات
+$data = readData();
+$news = $data['news'] ?? [];
+
+$found = false;
+
+// تحديث حالة الخبر إلى محذوف (Soft Delete)
+foreach ($news as &$item) {
+    if ($item['id'] == $id && $item['user_id'] == $_SESSION['user_id']) {
+        $item['deleted'] = true;
+        $found = true;
+        break;
+    }
+}
+
+if (!$found) {
+    header("Location: new.php");
+    exit;
+}
+
+// حفظ التعديلات
+$data['news'] = $news;
+saveData($data);
+
+// الرجوع لصفحة الأخبار
+header("Location: new.php");
+exit;
+

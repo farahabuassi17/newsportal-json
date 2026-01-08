@@ -1,6 +1,6 @@
 <?php
 session_start();
-include("db.php");
+require_once __DIR__ . "/json_db.php";
 
 // التأكد من تسجيل الدخول
 if (!isset($_SESSION['user_id'])) {
@@ -8,22 +8,50 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// قراءة البيانات
+$data = readData();
+$news = $data['news'] ?? [];
+$categories = $data['categories'] ?? [];
+$users = $data['users'] ?? [];
+
+// تجهيز خرائط (id => name)
+$categoryMap = [];
+foreach ($categories as $cat) {
+    $categoryMap[$cat['id']] = $cat['name'];
+}
+
+$userMap = [];
+foreach ($users as $u) {
+    $userMap[$u['id']] = $u['name'];
+}
+
 // استرجاع الخبر إذا ضغط المستخدم Restore
 if (isset($_GET['restore_id'])) {
-    $restore_id = intval($_GET['restore_id']);
-    $conn->query("UPDATE news SET deleted = 0 WHERE id = $restore_id");
+    $restore_id = (int) $_GET['restore_id'];
+
+    foreach ($news as &$item) {
+        if ($item['id'] == $restore_id) {
+            $item['deleted'] = false;
+            break;
+        }
+    }
+
+    $data['news'] = $news;
+    saveData($data);
+
     header("Location: deleted_news.php");
     exit;
 }
 
-// جلب جميع الأخبار المحذوفة
-$res = $conn->query("SELECT news.id, news.title, categories.name AS category, 
-                            users.name AS author, news.details, news.image
-                     FROM news
-                     LEFT JOIN categories ON news.category_id = categories.id
-                     LEFT JOIN users ON news.user_id = users.id
-                     WHERE news.deleted = 1
-                     ORDER BY news.id DESC");
+// جلب الأخبار المحذوفة فقط
+$deletedNews = array_filter($news, function ($item) {
+    return !empty($item['deleted']);
+});
+
+// ترتيب الأخبار تنازليًا
+usort($deletedNews, function ($a, $b) {
+    return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+});
 ?>
 
 <!DOCTYPE html>
@@ -71,6 +99,7 @@ $res = $conn->query("SELECT news.id, news.title, categories.name AS category,
 </head>
 
 <body>
+
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
@@ -85,6 +114,7 @@ $res = $conn->query("SELECT news.id, news.title, categories.name AS category,
             </ul>
         </div>
     </nav>
+
     <div class="container mt-4">
         <h2>🗑️ Deleted News</h2>
         <div class="card p-4 mt-3 shadow-sm">
@@ -102,31 +132,41 @@ $res = $conn->query("SELECT news.id, news.title, categories.name AS category,
                 </thead>
                 <tbody>
                     <?php
-                    if ($res && $res->num_rows > 0) {
-                        while ($row = $res->fetch_assoc()) {
+                    if (!empty($deletedNews)) {
+                        foreach ($deletedNews as $row) {
+                            $categoryName = $categoryMap[$row['category_id']] ?? 'No Category';
+                            $authorName = $userMap[$row['user_id']] ?? 'Unknown';
+
                             echo "<tr>";
                             echo "<td>{$row['id']}</td>";
-                            echo "<td>{$row['title']}</td>";
-                            echo "<td>{$row['category']}</td>";
-                            echo "<td>{$row['author']}</td>";
-                            echo "<td>" . substr($row['details'], 0, 50) . "...</td>";
+                            echo "<td>" . htmlspecialchars($row['title']) . "</td>";
+                            echo "<td>" . htmlspecialchars($categoryName) . "</td>";
+                            echo "<td>" . htmlspecialchars($authorName) . "</td>";
+                            echo "<td>" . htmlspecialchars(substr($row['details'], 0, 50)) . "...</td>";
                             echo "<td>";
-                            if (!empty($row['image']))
+
+                            if (!empty($row['image']) && file_exists('uploads/' . $row['image'])) {
                                 echo "<img src='uploads/{$row['image']}' width='80'>";
-                            else
+                            } else {
                                 echo "No Image";
+                            }
+
                             echo "</td>";
                             echo "<td>
-                                <a href='deleted_news.php?restore_id={$row['id']}' 
-                                   class='btn btn-sm btn-restore'
-                                   onclick='return confirm(\"Do you want to restore this news?\");'>
-                                   Restore
-                                </a>
-                              </td>";
+                            <a href='deleted_news.php?restore_id={$row['id']}'
+                               class='btn btn-sm btn-restore'
+                               onclick='return confirm(\"Do you want to restore this news?\");'>
+                               Restore
+                            </a>
+                          </td>";
                             echo "</tr>";
                         }
                     } else {
-                        echo "<tr><td colspan='7' class='text-center text-muted'>No deleted news found</td></tr>";
+                        echo "<tr>
+                        <td colspan='7' class='text-center text-muted'>
+                            No deleted news found
+                        </td>
+                      </tr>";
                     }
                     ?>
                 </tbody>

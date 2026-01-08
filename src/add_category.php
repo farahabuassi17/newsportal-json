@@ -1,19 +1,41 @@
 <?php
 session_start();
-include("db.php");
+require_once __DIR__ . "/json_db.php";
 
+// التأكد من تسجيل الدخول
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $name = $_POST['name'];
-    $sql = "INSERT INTO categories (name) VALUES ('$name')";
-    if ($conn->query($sql)) {
-        $success = "Category added successfully!";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name']);
+
+    if ($name === "") {
+        $error = "Category name cannot be empty!";
     } else {
-        $error = "Error: " . $conn->error;
+        $data = readData();
+        $categories = $data['categories'] ?? [];
+
+        // التأكد من عدم تكرار اسم التصنيف
+        foreach ($categories as $cat) {
+            if (strtolower($cat['name']) === strtolower($name)) {
+                $error = "This category already exists!";
+                break;
+            }
+        }
+
+        if (!isset($error)) {
+            $newCategory = [
+                "id" => time(), // id بسيط
+                "name" => $name
+            ];
+
+            $data['categories'][] = $newCategory;
+            saveData($data);
+
+            $success = "Category added successfully!";
+        }
     }
 }
 ?>
@@ -74,41 +96,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <body>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="dashboard.php">💖 My News Dashboard</a>
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item"><a class="nav-link" href="add_category.php">Add Category</a></li>
-                <li class="nav-item"><a class="nav-link" href="categories.php">View Categories</a></li>
-                <li class="nav-item"><a class="nav-link" href="add_news.php">Add News</a></li>
-                <li class="nav-item"><a class="nav-link" href="dashboard.php">My News</a></li>
-                <li class="nav-item"><a class="nav-link" href="deleted_news.php">Deleted News</a></li>
-                <li class="nav-item"><a class="nav-link" href="logout.php">Logout</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        <h2>Add New Category</h2>
-        <div class="card p-4 mt-3">
-            <?php if (!empty($success)) {
-                echo "<div class='alert alert-success'>$success</div>";
-            } ?>
-            <?php if (!empty($error)) {
-                echo "<div class='alert alert-danger'>$error</div>";
-            } ?>
-            <form method="post">
-                <div class="mb-3">
-                    <label class="form-label">Category Name</label>
-                    <input type="text" name="name" class="form-control" placeholder="Enter category name" required>
-                </div>
-                <button type="submit" class="btn btn-pink w-100">Add Category</button>
-            </form>
-        </div>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="dashboard.php">💖 My News Dashboard</a>
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link" href="add_category.php">Add Category</a></li>
+            <li class="nav-item"><a class="nav-link" href="categories.php">View Categories</a></li>
+            <li class="nav-item"><a class="nav-link" href="add_news.php">Add News</a></li>
+            <li class="nav-item"><a class="nav-link" href="dashboard.php">My News</a></li>
+            <li class="nav-item"><a class="nav-link" href="deleted_news.php">Deleted News</a></li>
+            <li class="nav-item"><a class="nav-link" href="logout.php">Logout</a></li>
+        </ul>
     </div>
+</nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<div class="container mt-4">
+    <h2>Add New Category</h2>
+    <div class="card p-4 mt-3">
+
+        <?php if (!empty($success)) { ?>
+            <div class="alert alert-success"><?= $success ?></div>
+        <?php } ?>
+
+        <?php if (!empty($error)) { ?>
+            <div class="alert alert-danger"><?= $error ?></div>
+        <?php } ?>
+
+        <form method="post">
+            <div class="mb-3">
+                <label class="form-label">Category Name</label>
+                <input type="text" name="name" class="form-control"
+                       placeholder="Enter category name" required>
+            </div>
+            <button type="submit" class="btn btn-pink w-100">Add Category</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

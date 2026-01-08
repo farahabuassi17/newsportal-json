@@ -1,22 +1,37 @@
 <?php
 session_start();
-include("db.php");
+require_once __DIR__ . "/json_db.php";
 
-// تأكد من تسجيل الدخول
+// التأكد من تسجيل الدخول
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
 
-$user_id = $_SESSION['user_id']; // معرف المستخدم الحالي
+$user_id = $_SESSION['user_id'];
 
-// جلب الأخبار الخاصة بالمستخدم فقط
-$res = $conn->query("SELECT news.id, news.title, categories.name AS category, 
-                            news.details, news.image
-                     FROM news
-                     LEFT JOIN categories ON news.category_id = categories.id
-                     WHERE news.deleted = 0 AND news.user_id = $user_id
-                     ORDER BY news.id DESC");
+// قراءة البيانات من JSON
+$data = readData();
+$news = $data['news'] ?? [];
+$categories = $data['categories'] ?? [];
+
+// تجهيز خريطة التصنيفات (id => name)
+$categoryMap = [];
+foreach ($categories as $cat) {
+    $categoryMap[$cat['id']] = $cat['name'];
+}
+
+// جلب أخبار المستخدم فقط (غير المحذوفة)
+$userNews = array_filter($news, function ($item) use ($user_id) {
+    return isset($item['user_id']) &&
+        $item['user_id'] == $user_id &&
+        empty($item['deleted']);
+});
+
+// ترتيب الأخبار من الأحدث للأقدم
+usort($userNews, function ($a, $b) {
+    return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+});
 ?>
 
 <!DOCTYPE html>
@@ -95,24 +110,32 @@ $res = $conn->query("SELECT news.id, news.title, categories.name AS category,
                 </thead>
                 <tbody>
                     <?php
-                    if ($res && $res->num_rows > 0) {
-                        while ($row = $res->fetch_assoc()) {
+                    if (!empty($userNews)) {
+                        foreach ($userNews as $row) {
+                            $categoryName = $categoryMap[$row['category_id']] ?? 'No Category';
+
                             echo "<tr>";
                             echo "<td>{$row['id']}</td>";
                             echo "<td>" . htmlspecialchars($row['title']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['category']) . "</td>";
+                            echo "<td>" . htmlspecialchars($categoryName) . "</td>";
                             echo "<td>" . htmlspecialchars(substr($row['details'], 0, 50)) . "...</td>";
                             echo "<td>";
+
                             if (!empty($row['image']) && file_exists('uploads/' . $row['image'])) {
                                 echo "<img src='uploads/{$row['image']}' width='80'>";
                             } else {
                                 echo "No Image";
                             }
+
                             echo "</td>";
                             echo "</tr>";
                         }
                     } else {
-                        echo "<tr><td colspan='5' class='text-center text-muted'>You haven't added any news yet</td></tr>";
+                        echo "<tr>
+                        <td colspan='5' class='text-center text-muted'>
+                            You haven't added any news yet
+                        </td>
+                      </tr>";
                     }
                     ?>
                 </tbody>

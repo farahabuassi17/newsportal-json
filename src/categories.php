@@ -1,16 +1,26 @@
 <?php
 session_start();
-include("db.php");
+require_once __DIR__ . "/json_db.php";
 
 // التحقق من تسجيل الدخول
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
+
+// قراءة البيانات من JSON
+$data = readData();
+$categories = $data['categories'] ?? [];
+
+// ترتيب التصنيفات تنازليًا حسب id
+usort($categories, function ($a, $b) {
+    return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+});
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Categories</title>
@@ -20,14 +30,20 @@ if (!isset($_SESSION['user_id'])) {
             background: linear-gradient(135deg, #fce4ec, #e1bee7);
             font-family: 'Poppins', sans-serif;
         }
+
         .navbar {
             background-color: #d81b60 !important;
         }
-        .navbar-brand, .nav-link {
+
+        .navbar-brand,
+        .nav-link {
             color: white !important;
             font-weight: bold;
         }
-        .nav-link:hover { color: #fce4ec !important; }
+
+        .nav-link:hover {
+            color: #fce4ec !important;
+        }
 
         h2 {
             color: #ad1457;
@@ -35,18 +51,34 @@ if (!isset($_SESSION['user_id'])) {
             margin-top: 20px;
         }
 
-        .btn-edit { background-color: #ab47bc; color: white; }
-        .btn-edit:hover { background-color: #ba68c8; }
+        .btn-edit {
+            background-color: #ab47bc;
+            color: white;
+        }
 
-        .btn-delete { background-color: #d81b60; color: white; }
-        .btn-delete:hover { background-color: #ec407a; }
+        .btn-edit:hover {
+            background-color: #ba68c8;
+        }
 
-        table th { background-color: #f8bbd0; color: #880e4f; }
+        .btn-delete {
+            background-color: #d81b60;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background-color: #ec407a;
+        }
+
+        table th {
+            background-color: #f8bbd0;
+            color: #880e4f;
+        }
     </style>
 </head>
+
 <body>
 
-<!-- Navbar -->
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand" href="dashboard.php">💖 My News Dashboard</a>
@@ -60,36 +92,43 @@ if (!isset($_SESSION['user_id'])) {
             </ul>
         </div>
     </nav>
-<div class="container mt-4">
-    <h2>All Categories</h2>
-    <div class="card p-3 mt-3">
-        <?php
-        $res = $conn->query("SELECT * FROM categories ORDER BY id DESC");
-        if ($res && $res->num_rows > 0) {
-            echo "<table class='table table-striped table-hover'>
-                <tr>
-                    <th>ID</th>
-                    <th>Category Name</th>
-                    <th>Actions</th>
-                </tr>";
-            while ($row = $res->fetch_assoc()) {
-                echo "<tr>
-                    <td>".$row['id']."</td>
-                    <td>".$row['name']."</td>
-                    <td>
-                        <a href='edit_category.php?id=".$row['id']."' class='btn btn-sm btn-edit'>Edit</a>
-                        <a href='delete_category.php?id=".$row['id']."' class='btn btn-sm btn-delete' onclick='return confirm(\"Are you sure you want to delete this category?\");'>Delete</a>
-                    </td>
-                </tr>";
-            }
-            echo "</table>";
-        } else {
-            echo "<p class='text-muted'>No categories found.</p>";
-        }
-        ?>
-    </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="container mt-4">
+        <h2>All Categories</h2>
+        <div class="card p-3 mt-3">
+            <?php
+            if (!empty($categories)) {
+                echo "<table class='table table-striped table-hover'>
+                    <tr>
+                        <th>ID</th>
+                        <th>Category Name</th>
+                        <th>Actions</th>
+                    </tr>";
+
+                foreach ($categories as $row) {
+                    echo "<tr>
+                        <td>{$row['id']}</td>
+                        <td>" . htmlspecialchars($row['name']) . "</td>
+                        <td>
+                            <a href='edit_category.php?id={$row['id']}' class='btn btn-sm btn-edit'>Edit</a>
+                            <a href='delete_category.php?id={$row['id']}' 
+                               class='btn btn-sm btn-delete'
+                               onclick='return confirm(\"Are you sure you want to delete this category?\");'>
+                               Delete
+                            </a>
+                        </td>
+                      </tr>";
+                }
+
+                echo "</table>";
+            } else {
+                echo "<p class='text-muted'>No categories found.</p>";
+            }
+            ?>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

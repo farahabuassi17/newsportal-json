@@ -1,55 +1,123 @@
 # Technical Notes
-## Biggest Docker Problem and Solution
-The biggest issue I faced while working with Docker was related to the MySQL database initialization.
-Although the database container was running, the required tables did not exist, which caused runtime errors in the PHP application.
-I learned that MySQL Docker images execute initialization SQL files only on the first run.
-Because a Docker volume already existed, the initialization script was not re-executed.
-I solved this problem by removing the existing volume using `docker compose down -v`, fixing the database schema (adding AUTO_INCREMENT and correct column names), and rebuilding the containers.
-This ensured that the database was created correctly and worked consistently for any developer running the project.
 
-## Most Important Git/GitHub Lesson
-The most important lesson I learned about Git and GitHub is the importance of a clean and professional workflow.
-I learned how to initialize a repository, create meaningful commits, connect a local project to a remote GitHub repository, and push changes correctly using upstream branches.
-Using clear commit messages helped me track my progress and made the project easier to understand for others.
-This assignment taught me how GitHub is used in real-world projects to collaborate, document progress, and publish professional work.
-.. 
-### Docker Compose to manage multiple services
-I used Docker Compose to manage multiple services (web and database),
-making the project easier to run with a single command.
+## Biggest Technical Challenge and Solution
 
-## GitHub Actions workflow 
-I added a GitHub Actions workflow to automatically build the Docker image on every push, ensuring continuous integration and early detection of build issues.
+The biggest challenge I faced in this project was **managing the database layer using Docker and MySQL**.
+Initially, the application depended on a MySQL container, and several issues appeared, such as missing tables, schema mismatches, and Docker volume persistence problems.
 
-### Multi-stage Docker Build
+I learned that MySQL initialization scripts are executed **only on the first container run**.
+Because Docker volumes persist data, schema changes were not applied automatically, which caused runtime errors in the PHP application.
 
-I used a multi-stage Docker build to reduce the final image size.
-The first stage installs and prepares the required PHP extensions.
-The second stage copies only the necessary runtime files and extensions.
-This approach improves performance, reduces image size, and follows Docker best practices.
+To solve this problem and simplify the architecture, I decided to **replace MySQL completely with JSON-based storage**.
+I redesigned the application logic to store users, categories, and news inside a single `data.json` file.
+This eliminated database dependency issues, simplified Docker setup, and made the project easier to run and understand.
 
-### Healthcheck
+This change improved stability and made the project more suitable for academic and learning purposes.
 
-I added a Docker healthcheck to ensure the application is running correctly.
-A simple health endpoint (health.php) was created to return HTTP 200.
+---
+
+## Data Storage Refactoring (MySQL → JSON)
+
+Instead of using a relational database, the project now uses a **JSON file as a lightweight data store**.
+
+All application data is stored in: torage/data.json
+
+This required refactoring:
+- Authentication logic
+- CRUD operations for categories and news
+- Soft delete and restore functionality
+- Manual data relationships (e.g., linking news to categories and users)
+
+This approach removed the need for database containers and volumes while keeping the application fully functional.
+
+---
+
+## Docker and Containerization Lessons
+
+I learned how to properly containerize a PHP application using Docker.
+The project now runs using a single web container with Apache and PHP.
+
+### Docker Compose
+
+Docker Compose is used to manage the application services.
+Even though the project now uses a single service, Docker Compose provides:
+- A clean and consistent startup process
+- One-command execution for the entire project
+- Easy future extensibility
+
+---
+
+## Multi-stage Docker Build
+
+I used a **multi-stage Docker build** to follow best practices:
+- The first stage prepares PHP and required extensions
+- The final stage contains only the necessary runtime files
+
+This reduces the final image size and improves performance.
+
+---
+
+## Healthcheck Implementation
+
+A Docker healthcheck was added to ensure the application is running correctly.
+
+A simple endpoint:health.php
+
+returns HTTP 200 if the application is healthy.
 Docker periodically checks this endpoint and marks the container as healthy or unhealthy.
-This improves reliability and follows best practices for containerized applications.
+This improves reliability and follows containerization best practices.
 
-### Makefile
+---
 
-I added a Makefile to simplify Docker commands.
-Common tasks such as building, running, stopping, and cleaning the project
-can now be executed using short and clear commands.
-This makes the project easier to use for any developer.
+## Makefile Usage
 
-### Pull Request Workflow
+A Makefile was added to simplify Docker commands.
+Common tasks such as building, running, stopping, and cleaning the project can be executed using simple commands like:
+make build
+make run
+make stop
 
-I used a feature branch and opened a Pull Request into the main branch.
-The Pull Request included a clear description of changes and screenshots.
-This demonstrates a professional Git workflow similar to real-world development teams.
------------
-This update was made using a feature branch and merged via Pull Request.
-This update was made using a feature branch and merged via Pull Request.
+This makes the project easier to use and understand for other developers.
 
+---
+
+## Most Important Git & GitHub Lessons
+
+The most important lesson I learned is the importance of a **clean and professional Git workflow**.
+
+I practiced:
+- Initializing a Git repository
+- Writing clear and meaningful commit messages
+- Using feature branches
+- Opening Pull Requests
+- Merging changes into the main branch
+
+This helped me understand how GitHub is used in real-world software development to track progress, review code, and collaborate effectively.
+
+---
+
+## Pull Request Workflow
+
+All major changes, including the migration from MySQL to JSON, were implemented using a **feature branch**.
+The changes were then merged into the main branch using a **Pull Request** with a clear description.
+
+This demonstrates a professional development workflow similar to industry practices.
+
+---
+
+## Final Reflection
+
+This project helped me understand:
+- How Docker works in real applications
+- The impact of architectural decisions (database vs file-based storage)
+- The importance of simplicity and maintainability
+- How version control supports professional development
+
+Overall, this project strengthened my practical skills in PHP, Docker, and GitHub workflows.
+
+---
+
+**This update was implemented using a feature branch and merged via Pull Request.**
 
 
 

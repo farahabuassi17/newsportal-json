@@ -1,47 +1,75 @@
 <?php
 session_start();
-include("db.php");
+require_once __DIR__ . "/json_db.php";
 
+// التأكد من تسجيل الدخول
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
 
-$id = $_GET['id'] ?? 0;
+$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+// قراءة البيانات
+$data = readData();
+$newsList = $data['news'] ?? [];
+$categories = $data['categories'] ?? [];
 
 // جلب بيانات الخبر
-$res = $conn->query("SELECT * FROM news WHERE id=$id");
-if ($res->num_rows == 0) {
+$news = null;
+foreach ($newsList as $item) {
+    if ($item['id'] === $id && empty($item['deleted'])) {
+        $news = $item;
+        break;
+    }
+}
+
+if (!$news) {
     header("Location: new.php");
     exit;
 }
-$news = $res->fetch_assoc();
 
-// جلب الفئات
-$categories = $conn->query("SELECT * FROM categories");
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = trim($_POST['title']);
+    $category_id = (int) $_POST['category'];
+    $details = trim($_POST['details']);
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $title = $_POST['title'];
-    $category_id = $_POST['category'];
-    $details = $_POST['details'];
-
-    // تحديث الصورة إذا تم رفع جديدة
-    $image_name = $news['image'];
-    if (!empty($_FILES['image']['name'])) {
-        $image_name = time() . '_' . $_FILES['image']['name'];
-        move_uploaded_file($_FILES['image']['tmp_name'], "uploads/" . $image_name);
-    }
-
-    $sql = "UPDATE news SET title='$title', category_id=$category_id, details='$details', image='$image_name' WHERE id=$id";
-
-    if ($conn->query($sql)) {
-        $success = "News updated successfully!";
-        $news['title'] = $title;
-        $news['category_id'] = $category_id;
-        $news['details'] = $details;
-        $news['image'] = $image_name;
+    if ($title === "" || $details === "" || !$category_id) {
+        $error = "All fields except image are required!";
     } else {
-        $error = "Error: " . $conn->error;
+        // الصورة الحالية
+        $image_name = $news['image'];
+
+        // رفع صورة جديدة إن وُجدت
+        if (!empty($_FILES['image']['name'])) {
+            $image_name = time() . "_" . basename($_FILES['image']['name']);
+            $uploadPath = __DIR__ . "/uploads/" . $image_name;
+
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], $uploadPath)) {
+                $error = "Failed to upload image.";
+            }
+        }
+
+        if (!isset($error)) {
+            // تحديث الخبر داخل المصفوفة
+            foreach ($newsList as &$item) {
+                if ($item['id'] === $id && $item['user_id'] === $_SESSION['user_id']) {
+                    $item['title'] = $title;
+                    $item['category_id'] = $category_id;
+                    $item['details'] = $details;
+                    $item['image'] = $image_name;
+
+                    // تحديث القيم المعروضة
+                    $news = $item;
+                    break;
+                }
+            }
+
+            $data['news'] = $newsList;
+            saveData($data);
+
+            $success = "News updated successfully!";
+        }
     }
 }
 ?>
@@ -101,7 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 
 <body>
-<!-- Navbar -->
+
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand" href="dashboard.php">💖 My News Dashboard</a>
@@ -115,14 +144,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </ul>
         </div>
     </nav>
-    
+
     <div class="container mt-4">
         <h2>Edit News</h2>
         <div class="card p-4 mt-3">
-            <?php if (!empty($success))
-                echo "<div class='alert alert-success'>$success</div>"; ?>
-            <?php if (!empty($error))
-                echo "<div class='alert alert-danger'>$error</div>"; ?>
+
+            <?php if (!empty($success)) { ?>
+                <div class="alert alert-success"><?= $success ?></div>
+            <?php } ?>
+
+            <?php if (!empty($error)) { ?>
+                <div class="alert alert-danger"><?= $error ?></div>
+            <?php } ?>
 
             <form method="post" enctype="multipart/form-data">
                 <div class="mb-3">
@@ -130,26 +163,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <input type="text" name="title" class="form-control"
                         value="<?= htmlspecialchars($news['title']); ?>" required>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label">Category</label>
                     <select name="category" class="form-select" required>
-                        <?php while ($row = $categories->fetch_assoc()) {
-                            $selected = $row['id'] == $news['category_id'] ? "selected" : "";
-                            echo "<option value='" . $row['id'] . "' $selected>" . $row['name'] . "</option>";
-                        } ?>
+                        <?php
+                        foreach ($categories as $cat) {
+                            $selected = ($cat['id'] == $news['category_id']) ? "selected" : "";
+                            echo "<option value='{$cat['id']}' $selected>" .
+                                htmlspecialchars($cat['name']) .
+                                "</option>";
+                        }
+                        ?>
                     </select>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label">Details</label>
                     <textarea name="details" class="form-control" rows="5"
                         required><?= htmlspecialchars($news['details']); ?></textarea>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label">Image (optional)</label>
                     <input type="file" name="image" class="form-control">
-                    <?php if (!empty($news['image']))
-                        echo "<img src='uploads/" . $news['image'] . "' width='100' class='mt-2 rounded'>"; ?>
+                    <?php if (!empty($news['image'])) { ?>
+                        <img src="uploads/<?= htmlspecialchars($news['image']); ?>" width="100" class="mt-2 rounded">
+                    <?php } ?>
                 </div>
+
                 <button type="submit" class="btn btn-pink w-100">Update News</button>
             </form>
         </div>

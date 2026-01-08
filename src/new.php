@@ -1,6 +1,6 @@
 <?php
 session_start();
-include("db.php");
+require_once __DIR__ . "/json_db.php";
 
 // تأكد من تسجيل الدخول
 if (!isset($_SESSION['user_id'])) {
@@ -8,16 +8,28 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$user_id = $_SESSION['user_id']; // معرف المستخدم الحالي
+$user_id = $_SESSION['user_id'];
 
-// جلب الأخبار الخاصة بالمستخدم الحالي فقط
-$res = $conn->query("SELECT news.id, news.title, categories.name AS category, 
-                            users.name AS author, news.details, news.image
-                     FROM news 
-                     LEFT JOIN categories ON news.category_id = categories.id
-                     LEFT JOIN users ON news.user_id = users.id
-                     WHERE news.deleted = 0 AND news.user_id = $user_id
-                     ORDER BY news.id DESC");
+// قراءة البيانات
+$data = readData();
+$news = $data['news'] ?? [];
+$categories = $data['categories'] ?? [];
+
+// تجهيز خريطة التصنيفات (id => name)
+$categoryMap = [];
+foreach ($categories as $cat) {
+    $categoryMap[$cat['id']] = $cat['name'];
+}
+
+// فلترة الأخبار الخاصة بالمستخدم (غير المحذوفة)
+$userNews = array_filter($news, function ($item) use ($user_id) {
+    return $item['user_id'] == $user_id && empty($item['deleted']);
+});
+
+// ترتيب الأخبار تنازليًا حسب id
+usort($userNews, function ($a, $b) {
+    return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+});
 ?>
 
 <!DOCTYPE html>
@@ -115,27 +127,40 @@ $res = $conn->query("SELECT news.id, news.title, categories.name AS category,
                 </thead>
                 <tbody>
                     <?php
-                    if ($res && $res->num_rows > 0) {
-                        while ($row = $res->fetch_assoc()) {
+                    if (!empty($userNews)) {
+                        foreach ($userNews as $row) {
+                            $categoryName = $categoryMap[$row['category_id']] ?? 'No Category';
+
                             echo "<tr>";
                             echo "<td>{$row['id']}</td>";
-                            echo "<td>{$row['title']}</td>";
-                            echo "<td>{$row['category']}</td>";
-                            echo "<td>" . substr($row['details'], 0, 50) . "...</td>";
+                            echo "<td>" . htmlspecialchars($row['title']) . "</td>";
+                            echo "<td>" . htmlspecialchars($categoryName) . "</td>";
+                            echo "<td>" . htmlspecialchars(substr($row['details'], 0, 50)) . "...</td>";
                             echo "<td>";
-                            if (!empty($row['image']))
-                                echo "<img src='uploads/" . $row['image'] . "' width='80'>";
-                            else
+
+                            if (!empty($row['image']) && file_exists('uploads/' . $row['image'])) {
+                                echo "<img src='uploads/{$row['image']}' width='80'>";
+                            } else {
                                 echo "No Image";
+                            }
+
                             echo "</td>";
                             echo "<td>
-                                    <a href='edit_new.php?id={$row['id']}' class='btn btn-sm btn-edit'>Edit</a>
-                                    <a href='delete_new.php?id={$row['id']}' class='btn btn-sm btn-delete' onclick='return confirm(\"Are you sure you want to delete this news?\");'>Delete</a>
-                                  </td>";
+                            <a href='edit_news.php?id={$row['id']}' class='btn btn-sm btn-edit'>Edit</a>
+                            <a href='delete_news.php?id={$row['id']}'
+                               class='btn btn-sm btn-delete'
+                               onclick='return confirm(\"Are you sure you want to delete this news?\");'>
+                               Delete
+                            </a>
+                          </td>";
                             echo "</tr>";
                         }
                     } else {
-                        echo "<tr><td colspan='6' class='text-center text-muted'>No news added yet</td></tr>";
+                        echo "<tr>
+                        <td colspan='6' class='text-center text-muted'>
+                            No news added yet
+                        </td>
+                      </tr>";
                     }
                     ?>
                 </tbody>

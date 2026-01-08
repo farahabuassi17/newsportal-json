@@ -1,5 +1,12 @@
+# Git files
 .git
 .gitignore
+
+# Node / frontend junk (if any)
 node_modules
+
+# Old MySQL Docker volume (no longer used)
 db_data
+
+# Documentation screenshots
 docs/screenshots

@@ -1,29 +1,41 @@
 <?php
-include("db.php");
 session_start();
-?>
-<?php
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $name = $_POST['name'];
-    $email = $_POST['email'];
-    $password = trim($_POST['password']);
+require_once __DIR__ . "/json_db.php";
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+
+    // Validate name (not only numbers)
     if (preg_match("/^[0-9]+$/", $name)) {
-        echo "<div class='alert alert-danger text-center'>❌ Full name cannot be only numbers." . $conn->error . "</div>";
-
+        $error = "❌ Full name cannot be only numbers.";
     } else {
+        $data = readData();
+        $users = $data['users'];
 
-        $check = $conn->query("SELECT * FROM users WHERE name ='$name' OR email='$email'");
-        if ($check && $check->num_rows > 0) {
-            echo "<div class='alert alert-danger text-center'>❌ This name or email is already registered." . $conn->error . "</div>";
-
-        } else {
-            $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-            $sql = "INSERT INTO users (name, email, password) VALUES ('$name','$email','$password')";
-            if ($conn->query($sql)) {
-                echo "<div class='alert alert-success text-center'>💖 Account created successfully! <a href='index.php'>Login</a></div>";
-            } else {
-                echo "<div class='alert alert-danger text-center'>❌ Error: " . $conn->error . "</div>";
+        // Check if name or email already exists
+        foreach ($users as $user) {
+            if ($user['name'] === $name || $user['email'] === $email) {
+                $error = "❌ This name or email is already registered.";
+                break;
             }
+        }
+
+        if (!isset($error)) {
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+            $newUser = [
+                "id" => time(), // simple unique id
+                "name" => $name,
+                "email" => $email,
+                "password" => $hashedPassword
+            ];
+
+            $data['users'][] = $newUser;
+            saveData($data);
+
+            $success = "💖 Account created successfully! <a href='index.php'>Login</a>";
         }
     }
 }
@@ -35,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <title>Register</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -86,31 +97,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="card p-4">
                 <div class="card-body">
                     <h2 class="text-center mb-4">✨ Create Account ✨</h2>
+
+                    <?php if (!empty($error)) { ?>
+                        <div class="alert alert-danger text-center"><?= $error ?></div>
+                    <?php } ?>
+
+                    <?php if (!empty($success)) { ?>
+                        <div class="alert alert-success text-center"><?= $success ?></div>
+                    <?php } ?>
+
                     <form method="post">
                         <div class="mb-3">
                             <label class="form-label">Full Name</label>
                             <input type="text" name="name" class="form-control" placeholder="Enter your full name"
                                 required>
                         </div>
+
                         <div class="mb-3">
                             <label class="form-label">Email</label>
                             <input type="email" name="email" class="form-control" placeholder="Enter your email"
                                 required>
                         </div>
+
                         <div class="mb-3">
                             <label class="form-label">Password</label>
                             <input type="password" name="password" class="form-control"
                                 placeholder="Enter your password" required>
                         </div>
+
                         <button type="submit" class="btn btn-pink w-100">Register</button>
                     </form>
-                    <p class="mt-3 text-center">Already have an account? <a href="index.php">Login here</a></p>
+
+                    <p class="mt-3 text-center">
+                        Already have an account? <a href="index.php">Login here</a>
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

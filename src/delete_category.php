@@ -1,36 +1,56 @@
 <?php
 session_start();
-include("db.php");
+require_once __DIR__ . "/json_db.php";
 
+// التحقق من تسجيل الدخول
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
 
-if (isset($_GET['id'])) {
-    $id = intval($_GET['id']);
+if (!isset($_GET['id'])) {
+    header("Location: categories.php");
+    exit;
+}
 
-    // التحقق إذا كان التصنيف مرتبط بأخبار
-    $check = $conn->query("SELECT COUNT(*) as count FROM news WHERE category_id = $id");
-    $row = $check->fetch_assoc();
+$id = (int)$_GET['id'];
 
-    if ($row['count'] > 0) {
+// قراءة البيانات
+$data = readData();
+$categories = $data['categories'] ?? [];
+$news = $data['news'] ?? [];
+
+// التحقق إذا كان التصنيف مرتبط بأخبار
+foreach ($news as $item) {
+    if (
+        isset($item['category_id']) &&
+        $item['category_id'] == $id &&
+        empty($item['deleted'])
+    ) {
         echo "<script>
                 alert('⚠️ Cannot delete this category because it is linked to existing news.');
                 window.location.href='categories.php';
               </script>";
         exit;
     }
+}
 
-    // إذا ما في أخبار مرتبط احذف
-    $sql = "DELETE FROM categories WHERE id = $id";
-    if ($conn->query($sql)) {
-        header("Location: categories.php");
-        exit;
-    } else {
-        echo "Error: " . $conn->error;
-    }
-} else {
+// حذف التصنيف (فلترة المصفوفة)
+$beforeCount = count($categories);
+$categories = array_filter($categories, function ($cat) use ($id) {
+    return $cat['id'] != $id;
+});
+
+// إذا لم يتم حذف أي شيء (id غير موجود)
+if (count($categories) === $beforeCount) {
     header("Location: categories.php");
     exit;
 }
+
+// حفظ التعديلات
+$data['categories'] = array_values($categories);
+saveData($data);
+
+// الرجوع لصفحة التصنيفات
+header("Location: categories.php");
+exit;

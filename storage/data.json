@@ -1,0 +1,18 @@
+{
+    "users": [
+        {
+            "id": 1767865363,
+            "name": "Farah",
+            "email": "farah@gmail.com",
+            "password": "$2y$10$4muprUufU7JB7E.T57y9Qeh3M.mPbOWw1o0UqpVCg3IzBzQgow\/7S"
+        }
+    ],
+    "categories": [
+        {
+            "id": 1767868085,
+            "name": "library"
+        }
+    ],
+    "news": [],
+    "logs": []
+}
