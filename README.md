@@ -88,8 +88,6 @@ Build and run:make run-build
 Stop containers:make stop
 View logs:make logs
 
-### 🌐 Access the Application
-
 ### 🔐 Authentication Flow
 
 1. Register a new account

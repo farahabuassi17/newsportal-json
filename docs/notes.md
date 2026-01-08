@@ -23,6 +23,7 @@ Instead of using a relational database, the project now uses a **JSON file as a 
 All application data is stored in: torage/data.json
 
 This required refactoring:
+
 - Authentication logic
 - CRUD operations for categories and news
 - Soft delete and restore functionality
@@ -41,6 +42,7 @@ The project now runs using a single web container with Apache and PHP.
 
 Docker Compose is used to manage the application services.
 Even though the project now uses a single service, Docker Compose provides:
+
 - A clean and consistent startup process
 - One-command execution for the entire project
 - Easy future extensibility
@@ -50,6 +52,7 @@ Even though the project now uses a single service, Docker Compose provides:
 ## Multi-stage Docker Build
 
 I used a **multi-stage Docker build** to follow best practices:
+
 - The first stage prepares PHP and required extensions
 - The final stage contains only the necessary runtime files
 
@@ -86,6 +89,7 @@ This makes the project easier to use and understand for other developers.
 The most important lesson I learned is the importance of a **clean and professional Git workflow**.
 
 I practiced:
+
 - Initializing a Git repository
 - Writing clear and meaningful commit messages
 - Using feature branches
@@ -108,6 +112,7 @@ This demonstrates a professional development workflow similar to industry practi
 ## Final Reflection
 
 This project helped me understand:
+
 - How Docker works in real applications
 - The impact of architectural decisions (database vs file-based storage)
 - The importance of simplicity and maintainability
@@ -117,7 +122,13 @@ Overall, this project strengthened my practical skills in PHP, Docker, and GitHu
 
 ---
 
+### Deployment Experience
+
+During this assignment, I deployed a Dockerized PHP application using Back4App cloud platform.
+Initially, the project used MySQL, which caused issues during container deployment.
+To simplify the deployment process, I migrated the application to use JSON file storage instead of a database.
+This change removed the need for a database service and made the application easier to deploy on Back4App.
+I successfully built the Docker image, deployed the container, and verified the application through the browser and a health check endpoint.
+This experience improved my understanding of Docker, cloud deployment, and backend service platforms.
+
 **This update was implemented using a feature branch and merged via Pull Request.**
-
-
-
