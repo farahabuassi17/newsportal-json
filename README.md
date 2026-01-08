@@ -34,7 +34,7 @@ It is designed for **learning, academic purposes, and easy deployment**.
 ---
 
 ## 📁 Project Structure
-
+```
 ├── src/
 │ ├── add_category.php
 │ ├── add_news.php
@@ -61,7 +61,7 @@ It is designed for **learning, academic purposes, and easy deployment**.
 ├── .gitignore
 ├── .dockerignore
 └── README.md
-
+```
 ---
 
 ## 📦 Data Storage (JSON)
